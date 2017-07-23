@@ -1,0 +1,159 @@
+<html lang="en" class=" ">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Home</title>
+
+    <style>
+        .chart {
+            position: relative;
+            display: inline-block;
+            width: 110px;
+            height: 110px;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body class="nav-md">
+
+<div class="content" id="app">
+
+    <div class="col-md-3 col-xs-12 widget widget_tally_box">
+        <div class="x_panel">
+
+            <h2 class="x_title clearfix">Memory</h2>
+
+            <canvas id="memoryChart" class="chart" width="200" height="200"></canvas>
+
+            <div>
+                <ul class="list-inline widget_tally">
+                    <li>
+                        <p>
+                            <span class="month">Total</span>
+                            <span class="count">{{round(stats.memory.total)}}</span>
+                        </p>
+                    </li>
+                    <li>
+                        <p>
+                            <span class="month">Used</span>
+                            <span class="count">{{round(stats.memory.total - stats.memory.available)}}</span>
+                        </p>
+                    </li>
+                    <li>
+                        <p>
+                            <span class="month">Available</span>
+                            <span class="count">{{round(stats.memory.available)}}</span>
+                        </p>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 col-xs-12 widget widget_tally_box">
+        <div class="x_panel">
+
+            <h2 class="x_title clearfix">Disk</h2>
+
+            <canvas id="diskChart" class="chart" width="200" height="200"></canvas>
+
+            <div>
+                <ul class="list-inline widget_tally">
+                    <li>
+                        <p>
+                            <span class="month">Total</span>
+                            <span class="count">{{round(stats.disk.total / 1024 / 1024)}} Mb</span>
+                        </p>
+                    </li>
+                    <li>
+                        <p>
+                            <span class="month">Used</span>
+                            <span class="count">{{round(stats.disk.used / 1024 / 1024)}} Mb</span>
+                        </p>
+                    </li>
+                    <li>
+                        <p>
+                            <span class="month">Available</span>
+                            <span class="count">{{round(stats.disk.available / 1024 / 1024)}} Mb</span>
+                        </p>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.min.js"></script>
+<script src="https://unpkg.com/vue"></script>
+<script src="bundle.js"></script>
+<script>
+    var app;
+
+    window.onload = function () {
+
+        app = new Vue({
+            el: '#app',
+            data: {
+                stats: {memory: {}, disk: {}}
+            },
+            methods: {
+                round: function (stringValue) {
+                    return (Math.round(Number(stringValue) * 100)) / 100
+                }
+            }
+        });
+
+
+        axios.get('http://192.168.0.99/app/')
+            .then(function (response) {
+
+                var stats = response.data.pop();
+
+                console.log(stats);
+
+                app.stats = stats;
+
+                var config = {
+                    type: 'doughnut',
+                    data: {
+                        datasets: [{
+                            data: [
+                                stats.memory.total - stats.memory.available, stats.memory.available
+                            ],
+                            backgroundColor: [
+                                '#ff0000'
+                            ],
+                            label: 'Memomry'
+                        }],
+                        labels: [
+                            "Used", "Available"
+                        ]
+                    },
+                    options: {
+                        responsive: false
+                    }
+                };
+
+                window.myPie = new Chart(document.getElementById("memoryChart").getContext("2d"), config);
+
+                config.data.datasets[0].data = [stats.disk.used, stats.disk.available];
+
+                window.myPie = new Chart(document.getElementById("diskChart").getContext("2d"), config);
+            })
+            .catch(function (error) {
+                console.log(error);
+            });
+    };
+</script>
+
+
+</body>
+</html>
